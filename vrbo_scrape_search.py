@@ -1,3 +1,4 @@
+import json
 import time
 from bs4 import BeautifulSoup as bs
 import datetime
@@ -42,6 +43,69 @@ Userful searches:
         }
 }
 '''
+def Get_UrlInfo(p_item):
+    # Read property detail Url
+    tag = p_item.find("a", "media-flex__content")
+    return tag.get("href") if tag else ""
+
+def Get_Type(p_item):
+    # Read Property Tyoe. Ex: Condo, House, etc.
+    tag = p_item.find("div", "HitExperimentInfo__content")
+    if tag:
+        tag = tag.find(class_="HitExperimentInfo__type-place-details")
+        if tag:
+            tag = ' '.join(val.get_text(strip=True) for val in tag.findAll("span"))  # Merge text of multiple <SPAN>
+    return tag if tag else ""
+
+def Get_Headline(p_item):
+    # Read headline. Ex: Adorable Cottage
+    tag = p_item.find("div", "HitExperimentInfo__content")
+    if tag:
+        tag = tag.find(class_="HitExperimentInfo__headline")
+    return tag.text if tag else ""
+
+def Get_Sleeps(p_item):
+    # Read Sleep and Bed info. Ex: Sleeps 4 1 bedroom 2 beds
+    tag = p_item.find("div", "HitExperimentInfo__content")
+    if tag:
+        tag = tag.find(class_="HitExperimentInfo__room-beds-details").findAll("span")
+        if tag:
+            tag = ' | '.join(val.get_text(strip=True) for val in tag)                # Merge text of multiple <SPAN>
+    return tag if tag else ""
+
+def Get_Rating(p_item):
+    # Read Rating. Ex: Wonderful! 4.9/5()
+    tag = p_item.find("footer", "media-flex__footer")
+    if tag:
+        tag = tag.find(class_="HitExperimentInfo__superlative")
+    return tag.text if tag else ""
+
+def Get_Reviews(p_item):
+    # Read star rating. Ex: 4.9(131)
+    tag = p_item.find("footer", "media-flex__footer")
+    if tag:
+        tag = tag.find(class_="HitExperimentInfo__starRating")
+        if tag:
+            tag = tag.find(class_="Rating__label")
+    return tag.text if tag else ""
+
+def Get_PriceAmount(p_item):
+    # Read price. Ex: $215
+    tag = p_item.find("footer", "media-flex__footer")
+    if tag:
+        tag = tag.find(class_="DualPrice__amount")
+    return tag.text if tag else ""
+
+def Get_Price_Period(p_item):
+    # Read price period. Ex: avg/night
+    tag = p_item.find("footer", "media-flex__footer")
+    if tag:
+        tag = tag.find(class_="DualPrice__period")
+    return tag.text if tag else ""
+
+def Get_Cancellation(p_item):
+    # >>> item.contents[2].contents[0].contents[3].text               # Free cancellation
+    return ""
 
 
 def get_dates(p_start, p_end, p_days, url_tmp):
@@ -53,12 +117,13 @@ def get_dates(p_start, p_end, p_days, url_tmp):
     date_set = {}
 
     start_date = dt.strptime(p_start, DATE_FORMAT)
-    end_date = dt.strptime(p_end, DATE_FORMAT)
+    end_date   = dt.strptime(p_end, DATE_FORMAT)
 
-    # Substracting one day because first day counts too
+    # Substracting one day because first day counts as well
     delta = datetime.timedelta(days=p_days-1)
 
-    while start_date < end_date:
+    while start_date <= end_date:
+        date_set["Duration"]    = p_days
         date_set["Start"]       = start_date.date().isoformat()
         date_set["End"]         = (start_date + delta).date().isoformat()
         date_set["SearchUrl"]   = url_tmp.replace("ARRIVAL_DATE",date_set["Start"]).replace("DEPARTURE_DATE", date_set["End"])
@@ -67,10 +132,7 @@ def get_dates(p_start, p_end, p_days, url_tmp):
 
         start_date += datetime.timedelta(days=1)
 
-    # returns duration and list of matching dates
-    res = {"duration": p_days, "dates": intervals}
-
-    return res
+    return {"results": intervals}
 
 
 def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp):
@@ -88,34 +150,35 @@ def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp):
 
 # VRBO URL TEMPLATE
 base_url        = "https://www.vrbo.com"
-location        = "virginia-beach-virginia-united-states-of-america"
+#location        = "virginia-beach-virginia-united-states-of-america"
+location        = "lewes-beach-delaware-united-states-of-america"
 arrival         = "ARRIVAL_DATE"    # 2021-12-31
 departure       = "DEPARTURE_DATE"  # 2021-12-31
 minNightlyPrice = "0"               # str int
-maxNightlyPrice = "300"             # str int
+maxNightlyPrice = "200"             # str int
 adultsCount     = "3"               # str int
 childrenCount   = "1"               # str int
 
 Url_Template = base_url + "/search/keywords:" + location +\
            "/arrival:" + arrival +\
            "/departure:" + departure + \
-           "/minNightlyPrice/" + minNightlyPrice + \
-           "/maxNightlyPrice/" + maxNightlyPrice + \
            "?" + "filterByTotalPrice=false" + "&"\
            "adultsCount=" + adultsCount + "&" + \
            "childrenCount=" + childrenCount + "&" + \
            "petIncluded=false&ssr=true"
 
+#            "/minNightlyPrice/" + minNightlyPrice + \
+#            "/maxNightlyPrice/" + maxNightlyPrice + \
 
 # Testing date generator
-start_str = "2021-07-01"
-end_str   = "2021-08-31"
-durations = [7,10]
+start_str = "2021-07-15"
+end_str   = "2021-08-15"
+durations = [3,5]
 
-UrlCollection = {"Period_Start": "2021-07-01",
-                 "Perfio_Ends" : "2021-08-31",
-                 "Durations": [7, 10],
-                 "Results": get_multiple_duration_dates(start_str, end_str, durations, Url_Template)}
+UrlCollection = {"Period_Start" : start_str,
+                 "Perfio_Ends"  : end_str,
+                 "Durations"    : durations,
+                 "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template)}
 
 
 # TODO: Research how to iterate many link without looking like DDoS. User delay?
@@ -141,106 +204,51 @@ browser.implicitly_wait(10)
 
 for Current_Url in UrlCollection["Results"]:
 
-    print("Duration :", Current_Url["duration"])
-    print("")
-
-    for Current_Range in Current_Url["dates"]:
+    for Current_Range in Current_Url["results"]:
+        print("    Duration   :", Current_Range["Duration"])
         print("    Start      :", Current_Range["Start"])
         print("    End        :", Current_Range["End"])
         print("    Search Url :", Current_Range["SearchUrl"])
-        print("")
-
-        Current_Range["SearchResults"] = []
-        ### Process VRBO Website
 
         # Load URL
-        # TODO: Remove this temp list refference with the loop
         browser.get(Current_Range["SearchUrl"])
         time.sleep(10)
 
-        # Points browser to the main page and prevents pointing to the later generated iframe
-        browser.switch_to.default_content()
+        browser.switch_to.default_content()   # Points browser to the main page instead of later generated iframe
+        soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
 
-        soup = bs(browser.page_source, 'html.parser')  #'lxml')  # Load the content for processing
-
-        #items = soup.find_all(role="listitem")
-        #items = soup.find_all('div', class_='HitExperiment')
         items = soup.find_all('div', {"data-wdio": re.compile('Waypoint*')})
 
-        vrbo_records = []
-        vrbo_record = {}
+        vrbo_record, vrbo_records = {}, []
+
+        Current_Range["SearchResults"] = []
 
         for item in items:
 
-            # Read property detail Url
-            CurrentTag = item.find("a","media-flex__content")
-            #item.find("a").get('href')
-            if CurrentTag:
-                vrbo_record["InfoUrl"]   = base_url + CurrentTag.get("href")
+            vrbo_record["InfoUrl"]      = base_url + Get_UrlInfo(item)
+            vrbo_record["Type"]         = Get_Type(item)
+            vrbo_record["Headline"]     = Get_Headline(item)
+            vrbo_record["Sleeps"]       = Get_Sleeps(item)
+            vrbo_record["Rating"]       = Get_Rating(item)
+            vrbo_record["Reviews"]      = Get_Reviews(item)
+            vrbo_record["Price_Amount"] = Get_PriceAmount(item)
+            vrbo_record["Price_Period"] = Get_Price_Period(item)
+            #vrbo_record["Cancellation"] = Get_Cancellation(item)
 
-            # Merge text of multiple span tags. Ex: Condo, House, etc.
-            CurrentTag = item.find("div", "HitExperimentInfo__content")
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="HitExperimentInfo__type-place-details")
-            if CurrentTag:
-                vrbo_record["Type"] = ' '.join(val.get_text(strip=True) for val in CurrentTag.findAll("span"))
-
-            # Read headline. Ex: Adorable Cottage
-            CurrentTag = item.find("div", "HitExperimentInfo__content")
-            if CurrentTag:
-                Current_Tag = CurrentTag.find(class_="HitExperimentInfo__headline")
-            if CurrentTag:
-                vrbo_record["Headline"] = CurrentTag.text
-
-            # Read Sleep and Bed info. Merge text of multiple span tags. Ex: Sleeps 4 1 bedroom 2 beds
-            CurrentTag = item.find("div", "HitExperimentInfo__content")
-
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="HitExperimentInfo__room-beds-details").findAll("span")
-            if CurrentTag:
-                vrbo_record["Sleeps"] = ' | '.join(val.get_text(strip=True) for val in CurrentTag)
-
-            # Read Rating. Ex: Wonderful! 4.9/5()
-            CurrentTag = item.find("footer", "media-flex__footer")
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="HitExperimentInfo__superlative")
-            if CurrentTag:
-                vrbo_record["Rating"] = CurrentTag.text
-
-            # Read star rating. Ex: 4.9(131)
-            CurrentTag = item.find("footer", "media-flex__footer")
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="HitExperimentInfo__starRating")
-                if CurrentTag:
-                    CurrentTag = CurrentTag.find(class_="Rating__label")
-            if CurrentTag:
-                vrbo_record["Reviews"] = CurrentTag.text
-
-            # Read price. Ex: $215
-            CurrentTag = item.find("footer", "media-flex__footer")
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="DualPrice__amount")
-            vrbo_record["Price_Amount"] = CurrentTag.text
-
-            # Read price period. Ex: avg/night
-            CurrentTag = item.find("footer", "media-flex__footer")
-            if CurrentTag:
-                CurrentTag = CurrentTag.find(class_="DualPrice__period")
-            vrbo_record["Price_Period"] = CurrentTag.text
-
-            #vrbo_record["CancelMsg"] = item.contents[2].contents[0].contents[3].text                         # Free cancellation
-
-            #vrbo_records.append(vrbo_record.copy())
             Current_Range["SearchResults"].append(vrbo_record.copy())
-            # Get Availability Dates
-            #sub_url = base_url+Url
-            #browser_sub.get(sub_url)
-            #browser_sub.switch_to.default_content()
 
-print("The End!")
+        print("    Found      :", len(Current_Range["SearchResults"]))
+        print("")
 
 browser.close()
 browser.quit()
+
+print("The End!")
+
+with open('data.json', 'w') as fp:
+    json.dump(UrlCollection, fp)
+
+
 
 '''
 Unused code
