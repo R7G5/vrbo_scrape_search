@@ -9,6 +9,8 @@ from selenium import webdriver
 #from selenium.webdriver.support.ui import WebDriverWait
 #from selenium.webdriver.support import expected_conditions as EC
 
+# JSON Explorer
+# http://jsonviewer.stack.hu/
 
 '''
 Userful searches:
@@ -18,31 +20,7 @@ Userful searches:
 
 '''
 
-'''
-{
-    'Period_Start' : '2021-06-01',
-    'Period_End'   : '2021-08-31',
-    'Durations'    : 5, 10
-    'Results'      :
-        { 
-            'duration'  : 5,
-            'dates'     : [
-                            {'Start':'2021-06-01' , 'End':'2021-06-05'},
-                            {'Start':'2021-06-02' , 'End':'2021-06-06'},
-                            ...
-                            {'Start':'2021-08-31' , 'End':'2021-08-04'}
-                          ],
 
-            'duration'  : 10,
-            'dates'     : [
-                            {'Start':'2021-06-01' , 'End':'2021-06-10'},
-                            {'Start':'2021-06-02' , 'End':'2021-06-11'},
-                            ...
-                            {'Start':'2021-08-31' , 'End':'2021-09-09'}
-                          ]
-        }
-}
-'''
 def Get_UrlInfo(p_item):
     # Read property detail Url
     tag = p_item.find("a", "media-flex__content")
@@ -122,7 +100,7 @@ def get_dates(p_start, p_end, p_days, url_tmp):
     # Substracting one day because first day counts as well
     delta = datetime.timedelta(days=p_days-1)
 
-    while start_date <= end_date:
+    while (start_date+datetime.timedelta(days=p_days)) <= end_date:
         date_set["Duration"]    = p_days
         date_set["Start"]       = start_date.date().isoformat()
         date_set["End"]         = (start_date + delta).date().isoformat()
@@ -132,7 +110,8 @@ def get_dates(p_start, p_end, p_days, url_tmp):
 
         start_date += datetime.timedelta(days=1)
 
-    return {"results": intervals}
+    #return {"results": intervals}
+    return intervals
 
 
 def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp):
@@ -171,12 +150,12 @@ Url_Template = base_url + "/search/keywords:" + location +\
 #            "/maxNightlyPrice/" + maxNightlyPrice + \
 
 # Testing date generator
-start_str = "2021-07-15"
-end_str   = "2021-08-15"
-durations = [3,5]
+start_str = "2021-07-25"
+end_str   = "2021-08-25"
+durations = [5,7]
 
 UrlCollection = {"Period_Start" : start_str,
-                 "Perfio_Ends"  : end_str,
+                 "Period_End"  : end_str,
                  "Durations"    : durations,
                  "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template)}
 
@@ -201,10 +180,11 @@ browser     = webdriver.Chrome('./chromedriver', chrome_options=options)     # B
 browser.implicitly_wait(10)
 #browser_sub.implicitly_wait(10)
 
+vrbo_record, vrbo_records = {}, []
 
 for Current_Url in UrlCollection["Results"]:
 
-    for Current_Range in Current_Url["results"]:
+    for Current_Range in Current_Url:
         print("    Duration   :", Current_Range["Duration"])
         print("    Start      :", Current_Range["Start"])
         print("    End        :", Current_Range["End"])
@@ -217,15 +197,25 @@ for Current_Url in UrlCollection["Results"]:
         browser.switch_to.default_content()   # Points browser to the main page instead of later generated iframe
         soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
 
-        items = soup.find_all('div', {"data-wdio": re.compile('Waypoint*')})
+        #items = soup.find_all('div', {"data-wdio": re.compile('Waypoint*')})
+        items = soup.find_all('div', attrs={"class": "HitExperiment", "role": "listitem"})
+        #items = soup.find_all('div',attrs={"class":"HitExperiment","role":"listitem","data-wdio":"hit"})
 
-        vrbo_record, vrbo_records = {}, []
-
-        Current_Range["SearchResults"] = []
+        #if items:
 
         for item in items:
+            vrbo_record["Period_Start"] = UrlCollection["Period_Start"]
+            vrbo_record["Period_End"]   = UrlCollection["Period_End"]
+            vrbo_record["Duration"]     = Current_Range["Duration"]
+            vrbo_record["Start"]        = Current_Range["Start"]
+            vrbo_record["End"]          = Current_Range["End"]
+            vrbo_record["SearchUrl"]    = Current_Range["SearchUrl"]
 
-            vrbo_record["InfoUrl"]      = base_url + Get_UrlInfo(item)
+            tmp = Get_UrlInfo(item)
+            if not tmp:
+                print("tmp - empty item. Break point!")
+
+            vrbo_record["PropertyUrl"]  = base_url + tmp
             vrbo_record["Type"]         = Get_Type(item)
             vrbo_record["Headline"]     = Get_Headline(item)
             vrbo_record["Sleeps"]       = Get_Sleeps(item)
@@ -235,9 +225,10 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_record["Price_Period"] = Get_Price_Period(item)
             #vrbo_record["Cancellation"] = Get_Cancellation(item)
 
-            Current_Range["SearchResults"].append(vrbo_record.copy())
+            vrbo_records.append(vrbo_record.copy())
+            vrbo_record = {}
 
-        print("    Found      :", len(Current_Range["SearchResults"]))
+        print("    Found      :", len(vrbo_records))
         print("")
 
 browser.close()
@@ -245,8 +236,14 @@ browser.quit()
 
 print("The End!")
 
-with open('data.json', 'w') as fp:
-    json.dump(UrlCollection, fp)
+current_date_and_time = str(datetime.datetime.now())
+extension = ".json"
+json_filename = 'data_' + current_date_and_time + extension
+
+print('Exporting data to the', json_filename, 'file')
+
+with open(json_filename, 'w') as fp:
+    json.dump(vrbo_records, fp)
 
 
 
