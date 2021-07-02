@@ -18,6 +18,8 @@ Userful searches:
 1. Find properties in specific locaiton(s) for the duration of X days within specified date period
     VA Beach, 10 days June, July, August 2021
 
+2. Ex: 
+    Are there any properties avalable for 5-9 days rental at these 3 specific locations between June 10 - August 20
 '''
 
 
@@ -81,6 +83,27 @@ def Get_Price_Period(p_item):
         tag = tag.find(class_="DualPrice__period")
     return tag.text if tag else ""
 
+def Get_Images(p_item):
+    #SimpleImageCarousel__image SimpleImageCarousel__image--cur
+    raw_tag_res = p_item.find_all('div', attrs={"class": re.compile("SimpleImageCarousel__image--*")})
+    #p_item.find('div', attrs={"class": re.compile("SimpleImageCarousel__image--*")}).attrs['style']
+
+    image_list = []
+
+    for raw_item in raw_tag_res:
+
+        tmp =  raw_item.attrs['style']
+
+        # Extract the URL out of the tag
+        # 'background-image: url("https://media.vrbo.com/lodging/49000000/48990000/48981700/48981643/e1874d2c.c6.jpg");'
+        result = re.findall(r'\"([^]]*)\"', tmp)
+
+        if result:
+            image_list.append(result[0])
+
+    return image_list
+
+
 def Get_Cancellation(p_item):
     # >>> item.contents[2].contents[0].contents[3].text               # Free cancellation
     return ""
@@ -110,14 +133,24 @@ def get_dates(p_start, p_end, p_days, url_tmp):
 
         start_date += datetime.timedelta(days=1)
 
-    #return {"results": intervals}
     return intervals
 
+# TODO: Add range of periods. Not just 5 and 7 but from 5-7
 
-def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp):
+def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp, use_as_range=False):
     # generates dates for multiple durations
 
-    all_durations = (p_days if type(p_days) is list else [p_days])
+    if use_as_range:
+
+        if len(p_days) >= 2:
+            tmp_range = range(p_days[0], p_days[-1]+1)
+            all_durations =[num for num in tmp_range]
+        else:
+            raise Exception("Function: get_multiple_duration_dates.  Error: p_days parameter should have more than two elements if use_as_range is set to True")
+
+    else:
+        all_durations = (p_days if type(p_days) is list else [p_days])
+
     res_dates = []
 
     for dur in all_durations:
@@ -150,18 +183,17 @@ Url_Template = base_url + "/search/keywords:" + location +\
 #            "/maxNightlyPrice/" + maxNightlyPrice + \
 
 # Testing date generator
-start_str = "2021-07-25"
-end_str   = "2021-08-25"
-durations = [5,7]
+start_str = "2021-07-12"
+end_str   = "2021-08-23"
+#use_as_range = True
+durations = [3,5]
 
 UrlCollection = {"Period_Start" : start_str,
-                 "Period_End"  : end_str,
+                 "Period_End"   : end_str,
                  "Durations"    : durations,
-                 "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template)}
-
+                 "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template,use_as_range=True)}
 
 # TODO: Research how to iterate many link without looking like DDoS. User delay?
-# TODO: Collect VRBO data in dict JSON format
 
 # Setting Chomedriver options:
 # 'headless' to keep broser windows from popping up
@@ -175,16 +207,19 @@ options.add_argument('unsafely-treat-insecure-origin-as-secure')
 
 # Opening browser session with preset options and chromedriver  in the same folder as this script "./chromedriver
 browser     = webdriver.Chrome('./chromedriver', chrome_options=options)     # Browser for the main search results
-#browser_sub = webdriver.Chrome('./chromedriver', chrome_options=options)    # Browser for the subpages
+#browser_sub = webdriver.Chrome('./chromedriver', chrome_options=options)    # Browser for the future multithread
 
 browser.implicitly_wait(10)
 #browser_sub.implicitly_wait(10)
 
 vrbo_record, vrbo_records = {}, []
 
+total_records_found = 0
+
 for Current_Url in UrlCollection["Results"]:
 
     for Current_Range in Current_Url:
+
         print("    Duration   :", Current_Range["Duration"])
         print("    Start      :", Current_Range["Start"])
         print("    End        :", Current_Range["End"])
@@ -197,25 +232,18 @@ for Current_Url in UrlCollection["Results"]:
         browser.switch_to.default_content()   # Points browser to the main page instead of later generated iframe
         soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
 
-        #items = soup.find_all('div', {"data-wdio": re.compile('Waypoint*')})
         items = soup.find_all('div', attrs={"class": "HitExperiment", "role": "listitem"})
-        #items = soup.find_all('div',attrs={"class":"HitExperiment","role":"listitem","data-wdio":"hit"})
-
-        #if items:
 
         for item in items:
+
             vrbo_record["Period_Start"] = UrlCollection["Period_Start"]
             vrbo_record["Period_End"]   = UrlCollection["Period_End"]
             vrbo_record["Duration"]     = Current_Range["Duration"]
             vrbo_record["Start"]        = Current_Range["Start"]
             vrbo_record["End"]          = Current_Range["End"]
             vrbo_record["SearchUrl"]    = Current_Range["SearchUrl"]
-
-            tmp = Get_UrlInfo(item)
-            if not tmp:
-                print("tmp - empty item. Break point!")
-
-            vrbo_record["PropertyUrl"]  = base_url + tmp
+            vrbo_record["PropertyUrl"]  = base_url + Get_UrlInfo(item)
+            vrbo_record["Images"]       = Get_Images(item)                      #TODO: Gets list of urls to each image
             vrbo_record["Type"]         = Get_Type(item)
             vrbo_record["Headline"]     = Get_Headline(item)
             vrbo_record["Sleeps"]       = Get_Sleeps(item)
@@ -228,22 +256,30 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_records.append(vrbo_record.copy())
             vrbo_record = {}
 
+        total_records_found += len(vrbo_records)
         print("    Found      :", len(vrbo_records))
         print("")
 
 browser.close()
 browser.quit()
 
-print("The End!")
+print("Total records found :", total_records_found)
 
-current_date_and_time = str(datetime.datetime.now())
-extension = ".json"
-json_filename = 'data_' + current_date_and_time + extension
+if total_records_found > 0:
 
-print('Exporting data to the', json_filename, 'file')
+    # Exporting search results to the JSON file
+    current_date_and_time = str(datetime.datetime.now())
+    extension = ".json"
+    json_filename = 'data_' + current_date_and_time + extension
 
-with open(json_filename, 'w') as fp:
-    json.dump(vrbo_records, fp)
+    print('Exporting data to the', json_filename, 'file')
+
+    with open(json_filename, 'w') as fp:
+        json.dump(vrbo_records, fp)
+
+
+
+
 
 
 
@@ -253,6 +289,11 @@ Unused code
     #    .find(class_="HitExperimentInfo__room-beds-details")\
     #    .find("span",text=lambda val: val and val.startswith("Sleeps")).text
     #Returns: Sleeps 4
+
+
+
+        #items = soup.find_all('div', {"data-wdio": re.compile('Waypoint*')})
+        #items = soup.find_all('div',attrs={"class":"HitExperiment","role":"listitem","data-wdio":"hit"})
 
 '''
 
@@ -291,4 +332,5 @@ try:
     )
 finally:
     browser.quit()
+
 '''
