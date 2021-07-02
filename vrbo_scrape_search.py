@@ -22,6 +22,11 @@ Userful searches:
     Are there any properties avalable for 5-9 days rental at these 3 specific locations between June 10 - August 20
 '''
 
+# TODO: Add ability to specify few not contiguous ranges, Ex: 7/10/21-07/15/21, 8/3/21-8/11/21
+# TODO: Add serch for multiple locations
+# TODO: Add other filters like property type and availability of pool etc.
+# TODO: Filter price in the data set because VRBO Site does not support ULR based max price filtering
+
 
 def Get_UrlInfo(p_item):
     # Read property detail Url
@@ -135,8 +140,6 @@ def get_dates(p_start, p_end, p_days, url_tmp):
 
     return intervals
 
-# TODO: Add range of periods. Not just 5 and 7 but from 5-7
-
 def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp, use_as_range=False):
     # generates dates for multiple durations
 
@@ -193,8 +196,6 @@ UrlCollection = {"Period_Start" : start_str,
                  "Durations"    : durations,
                  "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template,use_as_range=True)}
 
-# TODO: Research how to iterate many link without looking like DDoS. User delay?
-
 # Setting Chomedriver options:
 # 'headless' to keep broser windows from popping up
 # all other to ignore any cert warnings and/or prompts
@@ -243,7 +244,7 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_record["End"]          = Current_Range["End"]
             vrbo_record["SearchUrl"]    = Current_Range["SearchUrl"]
             vrbo_record["PropertyUrl"]  = base_url + Get_UrlInfo(item)
-            vrbo_record["Images"]       = Get_Images(item)                      #TODO: Gets list of urls to each image
+            vrbo_record["Images"]       = Get_Images(item)
             vrbo_record["Type"]         = Get_Type(item)
             vrbo_record["Headline"]     = Get_Headline(item)
             vrbo_record["Sleeps"]       = Get_Sleeps(item)
@@ -257,7 +258,7 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_record = {}
 
         total_records_found += len(vrbo_records)
-        print("    Found      :", len(vrbo_records))
+        print("    Found      :", len(vrbo_records), "[", total_records_found, "]")
         print("")
 
 browser.close()
@@ -279,10 +280,6 @@ if total_records_found > 0:
 
 
 
-
-
-
-
 '''
 Unused code
     #vrbo_record["Sleeps"] = item.find("div", "HitExperimentInfo__content")\
@@ -297,7 +294,6 @@ Unused code
 
 '''
 
-# TODO: Filter price in the data set because VRBO Site does not support ULR based max price filtering
 
 '''
 /arrival:2021-06-27/departure:2021-07-03/minNightlyPrice/0?filterByTotalPrice=false&petIncluded=false&ssr=true&adultsCount=3&childrenCount=1
