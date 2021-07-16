@@ -5,6 +5,7 @@ import datetime
 import re
 from datetime import datetime as dt
 from selenium import webdriver
+# import html_template
 #from selenium.webdriver.common.by import By
 #from selenium.webdriver.support.ui import WebDriverWait
 #from selenium.webdriver.support import expected_conditions as EC
@@ -22,10 +23,14 @@ Userful searches:
     Are there any properties avalable for 5-9 days rental at these 3 specific locations between June 10 - August 20
 '''
 
-# TODO: Add ability to specify few not contiguous ranges, Ex: 7/10/21-07/15/21, 8/3/21-8/11/21
-# TODO: Add serch for multiple locations
-# TODO: Add other filters like property type and availability of pool etc.
-# TODO: Filter price in the data set because VRBO Site does not support ULR based max price filtering
+# TODO:  [x] Change type fo parameters of get_dat and  get_multiple_duration_dates to DICT to make more flex
+# TODO:  [ ] Add ability to specify few not contiguous ranges, Ex: 7/10/21-07/15/21, 8/3/21-8/11/21
+# TODO:  [ ] Ability to Exclude certain dates and or ranges
+# TODO:  [ ] Add serch for multiple locations
+# TODO:  [ ] Add other filters like property type and availability of pool etc.
+# TODO:  [ ] Filter price in the data set because VRBO Site does not support ULR based max price filtering[
+# FIXME: [ ] Test
+# BUG:   [ ] Test
 
 
 def Get_UrlInfo(p_item):
@@ -114,8 +119,24 @@ def Get_Cancellation(p_item):
     return ""
 
 
-def get_dates(p_start, p_end, p_days, url_tmp):
+#def get_dates(p_start, p_end, p_days, url_tmp):
+def get_dates(params):
+    """
     # generates dates for a single provided duration
+    :param params: Dictionary
+            {
+                start : "",
+                end   : "",
+                days  : "",
+                url   : ""
+            }
+    :return: list of dictionary object contaning duration, start, end and search urls
+    """
+
+    p_start = params["start"]
+    p_end   = params["end"]
+    p_days  = params["days"]
+    p_url   = params["url"]
 
     DATE_FORMAT = "%Y-%m-%d"
 
@@ -132,7 +153,7 @@ def get_dates(p_start, p_end, p_days, url_tmp):
         date_set["Duration"]    = p_days
         date_set["Start"]       = start_date.date().isoformat()
         date_set["End"]         = (start_date + delta).date().isoformat()
-        date_set["SearchUrl"]   = url_tmp.replace("ARRIVAL_DATE",date_set["Start"]).replace("DEPARTURE_DATE", date_set["End"])
+        date_set["SearchUrl"]   = p_url.replace("ARRIVAL_DATE",date_set["Start"]).replace("DEPARTURE_DATE", date_set["End"])
 
         intervals.append(date_set.copy())
 
@@ -140,28 +161,50 @@ def get_dates(p_start, p_end, p_days, url_tmp):
 
     return intervals
 
-def get_multiple_duration_dates(p_start, p_end, p_days, url_tmp, use_as_range=False):
+#def get_multiple_duration_dates(p_start, p_end, p_days, p_url, p_use_as_range=False):
+def get_multiple_duration_dates(params):
     # generates dates for multiple durations
+    """
+    :param params:
+    :return:
+    """
+    p_start        = params["start"]
+    p_end          = params["end"]
+    p_days         = params["days"]
+    p_url          = params["url"]
+    p_use_as_range = params["use_as_range"]
 
-    if use_as_range:
 
-        if len(p_days) >= 2:
-            tmp_range = range(p_days[0], p_days[-1]+1)
-            all_durations =[num for num in tmp_range]
-        else:
-            raise Exception("Function: get_multiple_duration_dates.  Error: p_days parameter should have more than two elements if use_as_range is set to True")
+
+    if p_use_as_range and len(p_days) >= 2:
+        tmp_range = range(p_days[0], p_days[-1]+1)
+        all_durations =[num for num in tmp_range]
 
     else:
         all_durations = (p_days if type(p_days) is list else [p_days])
 
+#        else:
+#            raise Exception("Function: get_multiple_duration_dates.  Error: p_days parameter should have more than two elements if use_as_range is set to True")
+
+
     res_dates = []
 
     for dur in all_durations:
-        res_dates.append(get_dates(p_start, p_end, dur, url_tmp))
+
+        res_dates.append(get_dates(
+                                    {
+                                        "start" : p_start,
+                                        "end"   : p_end,
+                                        "days"  : dur,
+                                        "url"   : p_url
+                                    }
+                                  ))
 
     return res_dates
 
+
 # Main code
+
 
 # VRBO URL TEMPLATE
 base_url        = "https://www.vrbo.com"
@@ -186,15 +229,25 @@ Url_Template = base_url + "/search/keywords:" + location +\
 #            "/maxNightlyPrice/" + maxNightlyPrice + \
 
 # Testing date generator
-start_str = "2021-07-12"
-end_str   = "2021-08-23"
-#use_as_range = True
-durations = [3,5]
+start_str = "2021-07-17"
+end_str   = "2021-07-30"
+use_as_range = True
+durations = [7,8]
 
 UrlCollection = {"Period_Start" : start_str,
                  "Period_End"   : end_str,
                  "Durations"    : durations,
-                 "Results"      : get_multiple_duration_dates(start_str, end_str, durations, Url_Template,use_as_range=True)}
+                 "Location"     : location,
+                 "Results"      : get_multiple_duration_dates(
+                                                                {
+                                                                    "start"         : start_str,
+                                                                    "end"           : end_str,
+                                                                    "days"          : durations,
+                                                                    "url"           : Url_Template,
+                                                                    "use_as_range"  : True
+                                                                }
+                                                             )
+                }
 
 # Setting Chomedriver options:
 # 'headless' to keep broser windows from popping up
@@ -210,12 +263,11 @@ options.add_argument('unsafely-treat-insecure-origin-as-secure')
 browser     = webdriver.Chrome('./chromedriver', chrome_options=options)     # Browser for the main search results
 #browser_sub = webdriver.Chrome('./chromedriver', chrome_options=options)    # Browser for the future multithread
 
-browser.implicitly_wait(10)
+browser.implicitly_wait(12)
 #browser_sub.implicitly_wait(10)
 
 vrbo_record, vrbo_records = {}, []
 
-total_records_found = 0
 
 for Current_Url in UrlCollection["Results"]:
 
@@ -235,11 +287,13 @@ for Current_Url in UrlCollection["Results"]:
 
         items = soup.find_all('div', attrs={"class": "HitExperiment", "role": "listitem"})
 
+
         for item in items:
 
             vrbo_record["Period_Start"] = UrlCollection["Period_Start"]
             vrbo_record["Period_End"]   = UrlCollection["Period_End"]
             vrbo_record["Duration"]     = Current_Range["Duration"]
+            vrbo_record["Location"]     = UrlCollection["Location"]
             vrbo_record["Start"]        = Current_Range["Start"]
             vrbo_record["End"]          = Current_Range["End"]
             vrbo_record["SearchUrl"]    = Current_Range["SearchUrl"]
@@ -255,30 +309,31 @@ for Current_Url in UrlCollection["Results"]:
             #vrbo_record["Cancellation"] = Get_Cancellation(item)
 
             vrbo_records.append(vrbo_record.copy())
+
             vrbo_record = {}
 
-        total_records_found += len(vrbo_records)
-        print("    Found      :", len(vrbo_records), "[", total_records_found, "]")
+        print("    Found      :", len(items) , "[", len(vrbo_records), "]")
         print("")
 
 browser.close()
 browser.quit()
 
-print("Total records found :", total_records_found)
+print("Total records found :", len(vrbo_records))
 
-if total_records_found > 0:
+if len(vrbo_records) > 0:
 
     # Exporting search results to the JSON file
     current_date_and_time = str(datetime.datetime.now())
     extension = ".json"
     json_filename = 'data_' + current_date_and_time + extension
 
-    print('Exporting data to the', json_filename, 'file')
+    print('Exporting data to the', json_filename, ' file')
 
     with open(json_filename, 'w') as fp:
-        json.dump(vrbo_records, fp)
+        json.dump(vrbo_records, fp, sort_keys=True, indent=4)
 
 
+print("The End")
 
 '''
 Unused code

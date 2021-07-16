@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View</title>
+    <link href="dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="dist/js/tabulator.min.js"></script>
+</head>
+<body>
+<div>
+    <button id="file-load-trigger">Open File</button>
+</div>
+
+<div id="example-table"></div>
+
+<script language="JavaScript">
+    //Build Tabulator
+    var table = new Tabulator("#example-table", {
+        height:311,
+        layout:"fitColumns",
+        autoColumns:true,
+        placeholder:"Awaiting Data, Please Load File",
+});
+
+//trigger AJAX load on "Load Data via AJAX" button click
+document.getElementById("file-load-trigger").addEventListener("click", function(){
+    table.setDataFromLocalFile();
+});
+</script>
+
+</body>
+</html>
