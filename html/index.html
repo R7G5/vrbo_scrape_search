@@ -28,11 +28,18 @@
                 {title:"Location",     field:"Location",     sorter:"string", align:"left", width:100},
                 {title:"Start",        field:"Start",        sorter:"string", align:"left", width:100},
                 {title:"End",          field:"End",          sorter:"string", align:"left", width:100},
-                {title:"SearchUrl",    field:"SearchUrl",    sorter:"string", align:"left", width:100},
-                {title:"PropertyUrl",  field:"PropertyUrl",  sorter:"string", align:"left", width:100, formatter:"link", formatterParams:{
-                        labelField:"PropertyUrl",
-                        urlPrefix:"",
-                        target:"_blank",
+                {title:"SearchUrl",    field:"SearchUrl",    sorter:"string", align:"left", width:100,
+                        formatter:"link", formatterParams:{
+                            labelField:"SearchUrl",
+                            urlPrefix:"",
+                            target:"_blank",
+                        }
+                },
+                {title:"PropertyUrl",  field:"PropertyUrl",  sorter:"string", align:"left", width:100,
+                        formatter:"link", formatterParams:{
+                            labelField:"PropertyUrl",
+                            urlPrefix:"",
+                            target:"_blank",
                         }
                 },
                 {title:"Images",       field:"Images",       sorter:"string", align:"left", width:100},
