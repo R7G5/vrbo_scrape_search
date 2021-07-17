@@ -18,9 +18,33 @@
     var table = new Tabulator("#example-table", {
         height:311,
         layout:"fitColumns",
-        autoColumns:true,
+        autoColumns:false,
         placeholder:"Awaiting Data, Please Load File",
-});
+
+        columns:[
+                {title:"Period Start", field:"Period_Start", sorter:"string", align:"left", width:100},
+                {title:"Period End",   field:"Period_End",   sorter:"string", align:"left", width:100},
+                {title:"Duration",     field:"Duration",     sorter:"string", align:"left", width:100},
+                {title:"Location",     field:"Location",     sorter:"string", align:"left", width:100},
+                {title:"Start",        field:"Start",        sorter:"string", align:"left", width:100},
+                {title:"End",          field:"End",          sorter:"string", align:"left", width:100},
+                {title:"SearchUrl",    field:"SearchUrl",    sorter:"string", align:"left", width:100},
+                {title:"PropertyUrl",  field:"PropertyUrl",  sorter:"string", align:"left", width:100, formatter:"link", formatterParams:{
+                        labelField:"PropertyUrl",
+                        urlPrefix:"",
+                        target:"_blank",
+                        }
+                },
+                {title:"Images",       field:"Images",       sorter:"string", align:"left", width:100},
+                {title:"Type",         field:"Type",         sorter:"string", align:"left", width:100},
+                {title:"Headline",     field:"Headline",     sorter:"string", align:"left", width:100},
+                {title:"Sleeps",       field:"Sleeps",       sorter:"string", align:"left", width:100},
+                {title:"Rating",       field:"Rating",       sorter:"string", align:"left", width:100},
+                {title:"Reviews",      field:"Reviews",      sorter:"string", align:"left", width:100},
+                {title:"Price Amount", field:"Price_Amount", sorter:"string", align:"left", width:100},
+                {title:"Price Period", field:"Price_Period", sorter:"string", align:"left", width:100}
+        ]
+    });
 
 //trigger AJAX load on "Load Data via AJAX" button click
 document.getElementById("file-load-trigger").addEventListener("click", function(){
