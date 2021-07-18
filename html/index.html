@@ -11,15 +11,35 @@
     <button id="file-load-trigger">Open File</button>
 </div>
 
-<div id="example-table"></div>
+<div id="myTable"></div>
 
 <script language="JavaScript">
+
+    var imageFormatter = function(cell, formatterParams){
+        //cell - the cell component
+        //formatterParams - parameters set for the column
+
+        console.log(formatterParams)
+
+        debugger;
+
+	    var value = this.sanitizeHTML(cell.getValue()[0]);
+
+	    var el = "<img height='150' src='" + value + "'/>"
+
+		//cell.getRow().normalizeHeight();
+
+	    return el;
+    }
+
     //Build Tabulator
-    var table = new Tabulator("#example-table", {
-        height:311,
+    var table = new Tabulator("#myTable", {
+        height:680,
         layout:"fitColumns",
         autoColumns:false,
+        resizableRows:true,
         placeholder:"Awaiting Data, Please Load File",
+        groupBy:["Location"], //, "color"],
 
         columns:[
                 {title:"Period Start", field:"Period_Start", sorter:"string", align:"left", width:100},
@@ -42,15 +62,34 @@
                             target:"_blank",
                         }
                 },
-                {title:"Images",       field:"Images",       sorter:"string", align:"left", width:100},
+                {title:"Images",       field:"Images",       sorter:"string", align:"center", width:250,
+                        formatter:imageFormatter,
+                        variableHeight:true,
+                        formatterParams:{
+                               height:"50px",
+                               width:"50px",
+                        }
+                },
                 {title:"Type",         field:"Type",         sorter:"string", align:"left", width:100},
                 {title:"Headline",     field:"Headline",     sorter:"string", align:"left", width:100},
                 {title:"Sleeps",       field:"Sleeps",       sorter:"string", align:"left", width:100},
                 {title:"Rating",       field:"Rating",       sorter:"string", align:"left", width:100},
-                {title:"Reviews",      field:"Reviews",      sorter:"string", align:"left", width:100},
-                {title:"Price Amount", field:"Price_Amount", sorter:"string", align:"left", width:100},
+                {title:"Reviews",      field:"Reviews",      sorter:"string", align:"left", width:100,
+
+                //        formatter:"star", formatterParams:{
+                //            stars:5
+                //       }
+                //
+                },
+
+                {title:"Price Amount", field:"Price_Amount", sorter:"string", align:"right", width:100},
                 {title:"Price Period", field:"Price_Period", sorter:"string", align:"left", width:100}
-        ]
+        ],
+
+        rowFormatter:function(row){
+            row.normalizeHeight();
+        },
+
     });
 
 //trigger AJAX load on "Load Data via AJAX" button click
