@@ -29,6 +29,8 @@ Userful searches:
 # TODO:  [ ] Add serch for multiple locations
 # TODO:  [ ] Add other filters like property type and availability of pool etc.
 # TODO:  [ ] Filter price in the data set because VRBO Site does not support ULR based max price filtering[
+# TODO:  [X] Add site logon
+# TODO:  [ ] Add property ID to the list
 # FIXME: [ ] Test
 # BUG:   [ ] Test
 
@@ -126,17 +128,28 @@ def Get_Cancellation(p_item):
     return ""
 
 
+def Get_ProperyID(p_item):
+    print("Get_ProperyID")
+    pass
+
+
+
 def record_allowed(p_record):
     return "hotel" not in p_record["Type"] .lower()
 
 
-def is_logged_on(page_object):
+def is_logged_on(page_object, displayname=""):
     """
     Searches for the 'Log in' text in the menu. If user is logged on it has user's name instead.
     :return: Returns True if user is logged on
     """
-    #return not "Log in" in [cur_txt.text for cur_txt in soup.find_all('span', attrs={"class": "site-header-nav__icon-label"}, recursive=True)]
-    return not "Log in" in [cur_txt.text for cur_txt in page_object]
+
+    if displayname:
+        res = displayname.lower() in [cur_txt.text.lower() for cur_txt in page_object]
+    else:
+        res = not "Log in" in [cur_txt.text for cur_txt in page_object]
+
+    return res
 
 def traveler_login(p_creds):
     """
@@ -144,55 +157,48 @@ def traveler_login(p_creds):
     :param p_creds:
             Dictionary with username and password
             {
-                'username' : 'abc@def.com'
-                'password' : 'myPwd123'
+                'username'    : 'abc@def.com',
+                'password'    : 'myPwd123',
+                'displayname' : 'abc123'
             }
-    :return: True if logon was successful
+    :return: True site reports that logon was successful, otherwise False
     """
 
-    main_Url = "https://www.vrbo.com"
-
-    browser.get(main_Url)
+    browser.get(base_url)
     time.sleep(7)
-
     browser.switch_to.default_content()  # Points browser to the main page instead of later generated iframe
-    login_soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
 
-    # Find URL for the login page
-    trav_login_elements = login_soup.find_all('a', attrs={"class": "se-traveler-login"})
+    logged_on = is_logged_on(browser.find_elements_by_class_name('site-header-nav__icon-label'), displayname=p_creds['displayname'])
 
-    # Check logon URL var is not empty
-    if trav_login_elements:
-        login_URL = [ link.attrs['href'] for link in trav_login_elements][0]
+    if not logged_on:
+        login_soup = bs(browser.page_source, 'html.parser')
+        trav_login_elements = login_soup.find_all('a', attrs={"class": "se-traveler-login"})        # Find login page URL
 
-        browser.get(login_URL)
-        time.sleep(7)
 
-        browser.switch_to.default_content()  # Points browser to the main page instead of later generated iframe
-        #login_soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
+        # Check logon URL var is not empty
+        if trav_login_elements:
+            login_URL = [ link.attrs['href'] for link in trav_login_elements][0]
 
-        #login_soup.find_all('input', attrs={"id": "lex-emailAddress"})[0].attrs['value'] = p_creds['username']
+            browser.get(login_URL)
+            time.sleep(7)
 
-        username_field = browser.find_element_by_name("emailAddress")
-        username_field.send_keys(p_creds['username'])
-        submit_login_btn = browser.find_element_by_id("lex-initial-button")
-        submit_login_btn.click()
+            browser.switch_to.default_content()
+            username_field = browser.find_element_by_name("emailAddress")
+            username_field.send_keys(p_creds['username'])
+            submit_login_btn = browser.find_element_by_id("lex-initial-button")
+            submit_login_btn.click()
 
-        time.sleep(3)
+            time.sleep(3)
 
-        password_field = browser.find_element_by_name('password')
-        password_field.send_keys(p_creds['password'])
-        submit_password_btn = browser.find_element_by_name('login')
-        submit_password_btn.click()
+            password_field = browser.find_element_by_name('password')
+            password_field.send_keys(p_creds['password'])
+            submit_password_btn = browser.find_element_by_name('login')
+            submit_password_btn.click()
 
-        logged_on = not "Log in" in [curtxt.text for curtxt in browser.find_elements_by_class_name('site-header-nav__icon-label')]
-        logged_on_1 = is_logged_on(browser.find_elements_by_class_name('site-header-nav__icon-label'))
+            # re-check logon status
+            logged_on = is_logged_on(browser.find_elements_by_class_name('site-header-nav__icon-label'), displayname=p_creds['displayname'])
 
-        if not logged_on:
-            pass
-        print('debugging...')
-
-    return True
+    return logged_on
 
 def get_dates(params):
     """
@@ -334,19 +340,24 @@ options.add_argument('unsafely-treat-insecure-origin-as-secure')
 
 # Opening browser session with preset options and chromedriver  in the same folder as this script "./chromedriver
 browser     = webdriver.Chrome('./chromedriver', chrome_options=options)     # Browser for the main search results
-#browser_sub = webdriver.Chrome('./chromedriver', chrome_options=options)    # Browser for the future multithread
 
 browser.implicitly_wait(12)
-#browser_sub.implicitly_wait(10)
 
-#TODO: Traveler logon
-
+# Site credentials
+# TODO: Store in the file and encyptes
 myCreds = {
-    'username' : 'riad.guliyev@gmail.com',
-    'password' : 'ddhbiaE8'
+    'username'    : 'riad.guliyev@gmail.com',
+    'password'    : 'ddhbiaE8',
+    'displayname' : 'Riad G.'
 }
 
-res = traveler_login(myCreds)
+print("Logging on to", base_url)
+
+
+if traveler_login(myCreds):
+    print("Login was successful")
+else:
+    print("Login to the site was NOT successful")
 
 
 vrbo_record, vrbo_records = {}, []
@@ -359,9 +370,6 @@ for Current_Url in UrlCollection["Results"]:
         print("    Start      :", Current_Range["Start"])
         print("    End        :", Current_Range["End"])
         print("    Search Url :", Current_Range["SearchUrl"])
-
-        # BUG:  TEMP
-        #tmp_url = "https://www.vrbo.com/search/keywords:lewes-beach-delaware-united-states-of-america/arrival:2021-08-18/departure:2021-08-25?adultsCount=3&childrenCount=1&petIncluded=false&filterByTotalPrice=true&ssr=true"
 
         # Load URL
         #browser.get(tmp_url)
