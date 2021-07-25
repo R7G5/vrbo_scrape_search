@@ -1,0 +1,64 @@
+[
+    {
+        "Duration": 10,
+        "End": "2021-07-27",
+        "Headline": "Beach House Dewey - Double Bed Room",
+        "Images": ["https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/06ed71a3.c6.jpg"],
+        "Location": "lewes-beach-delaware-united-states-of-america",
+        "Period_End": "2021-07-30",
+        "Period_Start": "2021-07-17",
+        "Price_Amount": "$537",
+        "Price_Period": "/night",
+        "PropertyUrl": "https://www.vrbo.com/2058590?unitId=2623122&adultsCount=3&childrenCount=1&arrival=2021-07-18&departure=2021-07-27",
+        "Rating": "Wonderful! 4.8/5",
+        "Reviews": "4.8",
+        "SearchUrl": "https://www.vrbo.com/search/keywords:lewes-beach-delaware-united-states-of-america/arrival:2021-07-18/departure:2021-07-27?filterByTotalPrice=false&adultsCount=3&childrenCount=1&petIncluded=false&ssr=true",
+        "Sleeps": "Sleeps 4 | 1 bedroom | 2 beds",
+        "Start": "2021-07-18",
+        "Type": "Hotel 2 min walk to the beach"
+    },
+    {
+        "Duration": 10,
+        "End": "2021-07-28",
+        "Headline": "Beach House Dewey - Double Bed Room",
+        "Images": [
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/06ed71a3.c6.jpg",
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/89377cee.c6.jpg",
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/1daac0fa.c6.jpg"
+        ],
+        "Location": "lewes-beach-delaware-united-states-of-america",
+        "Period_End": "2021-07-30",
+        "Period_Start": "2021-07-17",
+        "Price_Amount": "$543",
+        "Price_Period": "/night",
+        "PropertyUrl": "https://www.vrbo.com/2058590?unitId=2623122&adultsCount=3&childrenCount=1&arrival=2021-07-19&departure=2021-07-28",
+        "Rating": "Wonderful! 4.8/5",
+        "Reviews": "4.8",
+        "SearchUrl": "https://www.vrbo.com/search/keywords:lewes-beach-delaware-united-states-of-america/arrival:2021-07-19/departure:2021-07-28?filterByTotalPrice=false&adultsCount=3&childrenCount=1&petIncluded=false&ssr=true",
+        "Sleeps": "Sleeps 4 | 1 bedroom | 2 beds",
+        "Start": "2021-07-19",
+        "Type": "Hotel 2 min walk to the beach"
+    },
+    {
+        "Duration": 10,
+        "End": "2021-07-29",
+        "Headline": "Beach House Dewey - Double Bed Room",
+        "Images": [
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/06ed71a3.c6.jpg",
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/89377cee.c6.jpg",
+            "https://media.vrbo.com/lodging/58000000/57800000/57792900/57792837/1daac0fa.c6.jpg"
+        ],
+        "Location": "lewes-beach-delaware-united-states-of-america",
+        "Period_End": "2021-07-30",
+        "Period_Start": "2021-07-17",
+        "Price_Amount": "$549",
+        "Price_Period": "/night",
+        "PropertyUrl": "https://www.vrbo.com/2058590?unitId=2623122&adultsCount=3&childrenCount=1&arrival=2021-07-20&departure=2021-07-29",
+        "Rating": "Wonderful! 4.8/5",
+        "Reviews": "4.8",
+        "SearchUrl": "https://www.vrbo.com/search/keywords:lewes-beach-delaware-united-states-of-america/arrival:2021-07-20/departure:2021-07-29?filterByTotalPrice=false&adultsCount=3&childrenCount=1&petIncluded=false&ssr=true",
+        "Sleeps": "Sleeps 4 | 1 bedroom | 2 beds",
+        "Start": "2021-07-20",
+        "Type": "Hotel 2 min walk to the beach"
+    }
+]

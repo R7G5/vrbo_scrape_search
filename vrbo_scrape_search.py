@@ -47,12 +47,14 @@ def Get_Type(p_item):
             tag = ' '.join(val.get_text(strip=True) for val in tag.findAll("span"))  # Merge text of multiple <SPAN>
     return tag if tag else ""
 
+
 def Get_Headline(p_item):
     # Read headline. Ex: Adorable Cottage
     tag = p_item.find("div", "HitExperimentInfo__content")
     if tag:
         tag = tag.find(class_="HitExperimentInfo__headline")
     return tag.text if tag else ""
+
 
 def Get_Sleeps(p_item):
     # Read Sleep and Bed info. Ex: Sleeps 4 1 bedroom 2 beds
@@ -63,12 +65,14 @@ def Get_Sleeps(p_item):
             tag = ' | '.join(val.get_text(strip=True) for val in tag)                # Merge text of multiple <SPAN>
     return tag if tag else ""
 
+
 def Get_Rating(p_item):
     # Read Rating. Ex: Wonderful! 4.9/5()
     tag = p_item.find("footer", "media-flex__footer")
     if tag:
         tag = tag.find(class_="HitExperimentInfo__superlative")
     return tag.text if tag else ""
+
 
 def Get_Reviews(p_item):
     # Read star rating. Ex: 4.9(131)
@@ -79,6 +83,7 @@ def Get_Reviews(p_item):
             tag = tag.find(class_="Rating__label")
     return tag.text if tag else ""
 
+
 def Get_PriceAmount(p_item):
     # Read price. Ex: $215
     tag = p_item.find("footer", "media-flex__footer")
@@ -86,12 +91,14 @@ def Get_PriceAmount(p_item):
         tag = tag.find(class_="DualPrice__amount")
     return tag.text if tag else ""
 
+
 def Get_Price_Period(p_item):
     # Read price period. Ex: avg/night
     tag = p_item.find("footer", "media-flex__footer")
     if tag:
         tag = tag.find(class_="DualPrice__period")
     return tag.text if tag else ""
+
 
 def Get_Images(p_item):
     #SimpleImageCarousel__image SimpleImageCarousel__image--cur
@@ -119,7 +126,74 @@ def Get_Cancellation(p_item):
     return ""
 
 
-#def get_dates(p_start, p_end, p_days, url_tmp):
+def record_allowed(p_record):
+    return "hotel" not in p_record["Type"] .lower()
+
+
+def is_logged_on(page_object):
+    """
+    Searches for the 'Log in' text in the menu. If user is logged on it has user's name instead.
+    :return: Returns True if user is logged on
+    """
+    #return not "Log in" in [cur_txt.text for cur_txt in soup.find_all('span', attrs={"class": "site-header-nav__icon-label"}, recursive=True)]
+    return not "Log in" in [cur_txt.text for cur_txt in page_object]
+
+def traveler_login(p_creds):
+    """
+
+    :param p_creds:
+            Dictionary with username and password
+            {
+                'username' : 'abc@def.com'
+                'password' : 'myPwd123'
+            }
+    :return: True if logon was successful
+    """
+
+    main_Url = "https://www.vrbo.com"
+
+    browser.get(main_Url)
+    time.sleep(7)
+
+    browser.switch_to.default_content()  # Points browser to the main page instead of later generated iframe
+    login_soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
+
+    # Find URL for the login page
+    trav_login_elements = login_soup.find_all('a', attrs={"class": "se-traveler-login"})
+
+    # Check logon URL var is not empty
+    if trav_login_elements:
+        login_URL = [ link.attrs['href'] for link in trav_login_elements][0]
+
+        browser.get(login_URL)
+        time.sleep(7)
+
+        browser.switch_to.default_content()  # Points browser to the main page instead of later generated iframe
+        #login_soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
+
+        #login_soup.find_all('input', attrs={"id": "lex-emailAddress"})[0].attrs['value'] = p_creds['username']
+
+        username_field = browser.find_element_by_name("emailAddress")
+        username_field.send_keys(p_creds['username'])
+        submit_login_btn = browser.find_element_by_id("lex-initial-button")
+        submit_login_btn.click()
+
+        time.sleep(3)
+
+        password_field = browser.find_element_by_name('password')
+        password_field.send_keys(p_creds['password'])
+        submit_password_btn = browser.find_element_by_name('login')
+        submit_password_btn.click()
+
+        logged_on = not "Log in" in [curtxt.text for curtxt in browser.find_elements_by_class_name('site-header-nav__icon-label')]
+        logged_on_1 = is_logged_on(browser.find_elements_by_class_name('site-header-nav__icon-label'))
+
+        if not logged_on:
+            pass
+        print('debugging...')
+
+    return True
+
 def get_dates(params):
     """
     # generates dates for a single provided duration
@@ -174,8 +248,6 @@ def get_multiple_duration_dates(params):
     p_url          = params["url"]
     p_use_as_range = params["use_as_range"]
 
-
-
     if p_use_as_range and len(p_days) >= 2:
         tmp_range = range(p_days[0], p_days[-1]+1)
         all_durations =[num for num in tmp_range]
@@ -185,7 +257,6 @@ def get_multiple_duration_dates(params):
 
 #        else:
 #            raise Exception("Function: get_multiple_duration_dates.  Error: p_days parameter should have more than two elements if use_as_range is set to True")
-
 
     res_dates = []
 
@@ -202,9 +273,7 @@ def get_multiple_duration_dates(params):
 
     return res_dates
 
-
 # Main code
-
 
 # VRBO URL TEMPLATE
 base_url        = "https://www.vrbo.com"
@@ -217,9 +286,13 @@ maxNightlyPrice = "200"             # str int
 adultsCount     = "3"               # str int
 childrenCount   = "1"               # str int
 
+#          BedBreakft Bungalow Cabin      Castle    Cntr-hous Cottage  Estate     Farmhouse Guest-hous House    Tower    Townhouse  Villa    Apartment or Condo
+filters = "filter:61/filter:63/filter:64/filter:65/filter:67/filter:69/filter:70/filter:71/filter:72/filter:74/filter:81/filter:82/filter:83/filter:92"
+
 Url_Template = base_url + "/search/keywords:" + location +\
            "/arrival:" + arrival +\
            "/departure:" + departure + \
+           "/" + filters + "/" + \
            "?" + "filterByTotalPrice=false" + "&"\
            "adultsCount=" + adultsCount + "&" + \
            "childrenCount=" + childrenCount + "&" + \
@@ -230,9 +303,9 @@ Url_Template = base_url + "/search/keywords:" + location +\
 
 # Testing date generator
 start_str = "2021-07-17"
-end_str   = "2021-07-30"
+end_str   = "2021-08-31"
 use_as_range = True
-durations = [7,8]
+durations = [5,10]
 
 UrlCollection = {"Period_Start" : start_str,
                  "Period_End"   : end_str,
@@ -266,8 +339,17 @@ browser     = webdriver.Chrome('./chromedriver', chrome_options=options)     # B
 browser.implicitly_wait(12)
 #browser_sub.implicitly_wait(10)
 
-vrbo_record, vrbo_records = {}, []
+#TODO: Traveler logon
 
+myCreds = {
+    'username' : 'riad.guliyev@gmail.com',
+    'password' : 'ddhbiaE8'
+}
+
+res = traveler_login(myCreds)
+
+
+vrbo_record, vrbo_records = {}, []
 
 for Current_Url in UrlCollection["Results"]:
 
@@ -278,15 +360,18 @@ for Current_Url in UrlCollection["Results"]:
         print("    End        :", Current_Range["End"])
         print("    Search Url :", Current_Range["SearchUrl"])
 
+        # BUG:  TEMP
+        #tmp_url = "https://www.vrbo.com/search/keywords:lewes-beach-delaware-united-states-of-america/arrival:2021-08-18/departure:2021-08-25?adultsCount=3&childrenCount=1&petIncluded=false&filterByTotalPrice=true&ssr=true"
+
         # Load URL
+        #browser.get(tmp_url)
         browser.get(Current_Range["SearchUrl"])
         time.sleep(10)
 
         browser.switch_to.default_content()   # Points browser to the main page instead of later generated iframe
         soup = bs(browser.page_source, 'html.parser')  # Load the content for processing
 
-        items = soup.find_all('div', attrs={"class": "HitExperiment", "role": "listitem"})
-
+        items = soup.find_all('div', attrs={"class": "HitExperiment", "role": "listitem"}, recursive=True)
 
         for item in items:
 
@@ -308,7 +393,8 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_record["Price_Period"] = Get_Price_Period(item)
             #vrbo_record["Cancellation"] = Get_Cancellation(item)
 
-            vrbo_records.append(vrbo_record.copy())
+            if record_allowed(vrbo_record):
+                vrbo_records.append(vrbo_record.copy())
 
             vrbo_record = {}
 
