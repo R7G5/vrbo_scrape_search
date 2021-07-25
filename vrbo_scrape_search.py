@@ -129,10 +129,12 @@ def Get_Cancellation(p_item):
 
 
 def Get_ProperyID(p_item):
-    print("Get_ProperyID")
-    pass
-
-
+    tag = p_item.find("a",class_="media-flex__content")
+    result = ""
+    if tag:
+        result = tag.attrs['href'].split("?")[1].split("&")[0].split("=")[1]
+       # = p_item.contents[2].attrs['href'].split("?")[1].split("&")[0].split("=")[1]
+    return result
 
 def record_allowed(p_record):
     return "hotel" not in p_record["Type"] .lower()
@@ -308,10 +310,10 @@ Url_Template = base_url + "/search/keywords:" + location +\
 #            "/maxNightlyPrice/" + maxNightlyPrice + \
 
 # Testing date generator
-start_str = "2021-07-17"
+start_str = "2021-07-30"
 end_str   = "2021-08-31"
 use_as_range = True
-durations = [5,10]
+durations = [5,6]
 
 UrlCollection = {"Period_Start" : start_str,
                  "Period_End"   : end_str,
@@ -399,6 +401,7 @@ for Current_Url in UrlCollection["Results"]:
             vrbo_record["Reviews"]      = Get_Reviews(item)
             vrbo_record["Price_Amount"] = Get_PriceAmount(item)
             vrbo_record["Price_Period"] = Get_Price_Period(item)
+            vrbo_record["UnitID"]       = Get_ProperyID(item)
             #vrbo_record["Cancellation"] = Get_Cancellation(item)
 
             if record_allowed(vrbo_record):
