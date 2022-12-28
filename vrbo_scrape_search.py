@@ -348,9 +348,9 @@ browser.implicitly_wait(12)
 # Site credentials
 # TODO: Store in the file and encyptes
 myCreds = {
-    'username'    : 'riad.guliyev@gmail.com',
-    'password'    : 'ddhbiaE8',
-    'displayname' : 'Riad G.'
+    'username'    : 'abc@123.com',
+    'password'    : 'pASSWORDhERE',
+    'displayname' : 'nAME'
 }
 
 print("Logging on to", base_url)
